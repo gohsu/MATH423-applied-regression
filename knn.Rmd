@@ -1,0 +1,67 @@
+---
+title: "KNN"
+author: "Su Goh"
+date: "02/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First, load the FNN package to use KNN methods. I'm going to use the Boston dataset, and use lower status of the population (percent) (`lstat`) to predict per capita crime rate by town (`crim`).
+```{r load}
+library(FNN)
+library(MASS)
+x =  Boston$lstat
+y = Boston$crim
+```
+
+Plot the observations:
+```{r plot}
+plot(x, y, xlab = "Lower status of population (%)", ylab = "Per capita crime rate")
+```
+
+To use knn, we need a training set and a test set. The test set is the predictor values, x, at which we would like to make predictions. 
+
+Here, the test set we create is a sequence of numbers between the min and max of the x predictors, with increments by 0.01
+```{r test}
+lstat_grid = data.frame(lstat = seq(min(Boston$lstat), max(Boston$lstat), by=0.01))
+# or equivalently
+# lstat_grid = data.frame(lstat = seq(range(Boston$lstat)[1], range(Boston$lstat)[2], by=0.01))
+```
+
+Now, we can make knn predictions, using the `knn.reg()` function from the FNN package. For the sake of the exercise, we'll try different values of k.
+```{r pred}
+pred_k1 = knn.reg(train=x, test=lstat_grid, y=y, k=1)
+pred_k5 = knn.reg(train=x, test=lstat_grid, y=y, k=5)
+pred_k10 = knn.reg(train=x, test=lstat_grid, y=y, k=10)
+pred_k50 = knn.reg(train=x, test=lstat_grid, y=y, k=50)
+pred_k100 = knn.reg(train=x, test=lstat_grid, y=y, k=100)
+n = dim(Boston)[1]
+pred_kn = knn.reg(train=x, test=lstat_grid, y=y, k=n)
+```
+
+View these predictions:
+```{r pred plot}
+par(mfrow = c(3,2))
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=1")
+lines(x = lstat_grid$lstat, y = pred_k1$pred, col='orange')
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=5")
+lines(x = lstat_grid$lstat, y = pred_k5$pred, col='orange')
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=10")
+lines(x = lstat_grid$lstat, y = pred_k10$pred, col='orange')
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=50")
+lines(x = lstat_grid$lstat, y = pred_k50$pred, col='orange')
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=100")
+lines(x = lstat_grid$lstat, y = pred_k100$pred, col='orange')
+
+plot(y ~ x, xlab = "Lower status of population (%)", ylab = "Per capita crime rate", main="k=n")
+lines(x = lstat_grid$lstat, y = pred_kn$pred, col='orange')
+```
+
