@@ -1,0 +1,106 @@
+---
+title: "SLR Simulation"
+author: "Su Goh"
+date: "09/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+addTrans <- function(color,trans) {
+  # This function adds transparancy to a color.
+  # Define transparancy with an integer between 0 and 255
+  # 0 being fully transparant and 255 being fully visable
+  # Works with either color and trans a vector of equal length,
+  # or one of the two of length 1.
+  if (length(color)!=length(trans)&!any(c(length(color),length(trans))==1)){ 
+	  stop("Vector lengths not correct")
+  }
+	if (length(color)==1 & length(trans)>1) color <- rep(color,length(trans)) 
+	if (length(trans)==1 & length(color)>1) trans <- rep(trans,length(color))
+
+  num2hex <- function(x) {
+	  	hex <- unlist(strsplit("0123456789ABCDEF",split=""))
+		return(paste(hex[(x-x%%16)/16+1],hex[x%%16+1],sep="")) 
+	}
+
+	rgb <- rbind(col2rgb(color),trans)
+	res <- paste("#",apply(apply(rgb,2,num2hex),2,paste,collapse=""),sep="") 
+	return(res)
+}
+
+```
+
+## SLR Data Generation
+In the following examples, I'll generate a dataframe with data based on a simple linear regression model. Generally, the procedure here is to create a function that will populate a dataframe, with each variable following the prescribed formula. Then when we have the data, running lm on it to get the coefficient estimates.
+
+The linear model is as follows and the usual assumptions (A1-4) hold:
+\(Y = \beta_0 + \beta_1 X_1 + \epsilon\)
+
+  * the sample size, \(n\) is given, e.g. \(n=100\)
+  * the distribution of \(X_1\) is given, e.g. \(X_1 \sim U(-1, 1) \)
+  * the distribution of the error terms \(\epsilon\) is given, e.g. \(\epsilon \sim t_1\)
+  * for simulations, we're also given values of \(\beta_0\) and \(\beta_1\)
+  
+### Example 1:  \(\epsilon \sim t_1\)
+Let's say X follows a uniform distribution in the interval \([-1, 1]\) and we have \(\beta_0 =5\), \(\beta_1 = -2\). Generate data for a SLR model where the errors follow a t distribution with 1 degree of freedom.
+
+Note the difference between the true regression line (following the given values of \(\beta\)) and the fitted regression line, attained from a sample from the data.
+
+```{r errors ~ t}
+errors_t_df <- function(n, beta0, beta1, df){
+  x <- runif(n, min=-1, max=1)  # built in r function for the uniform distribution
+  e <- rt(n, df=df)  # draw n points from the t dist with df degrees of freedom
+  y <- beta0 + beta1 * x + e  # this is our linear model spec
+  return(data.frame(x=x, y=y))
+}
+
+# Create the data
+errors_t_model.data = errors_t_df(n=10000, beta0=5, beta1=-2, df=1)
+plot(errors_t_model.data$x, errors_t_model.data$y, col=addTrans('orange', 30), ylim=c(-5,20))
+# true regression line
+abline(a=5, b=-2, col='red', lwd=3)
+
+# fitted regresion line
+errors_t_model.sample = errors_t_df(n=50, beta0=5, beta1=-2, df=1)
+points(errors_t_model.sample$x, errors_t_model.sample$y, col=addTrans('blue', 200))
+errors_t_model.fit = lm(y ~ x, data=errors_t_model.sample)
+abline(errors_t_model.fit, col=addTrans('blue', 200))
+```
+
+
+### Example 2:  \(\epsilon \sim \text{Gamma}\)
+Same idea here and same parameters. Except now we consider the case where the error term comes from another distribution:
+
+Let \(\eta \sim \Gamma(k=2, \theta=1)\). \(\mathbb{E}(\eta) = k \cdot \theta = 2\).
+
+But we would like the error term to have zero expectation, so we can set \(\epsilon = \eta - 2\) so that \(\mathbb{E}(\epsilon) = \mathbb{E}(\eta - 2) = 2 -2 = 0\).
+
+```{r gamma errors}
+errors_gamma_df <- function(n, beta0, beta1, k, theta){
+  x <- runif(n, min=-1, max=1)  
+  e <- rgamma(n, shape=k, scale=theta) - k * theta
+  y <- beta0 + beta1 * x + e  
+  return(data.frame(x=x, y=y))
+}
+
+# Create the data
+errors_gamma_model.data = errors_gamma_df(n=10000, beta0=5, beta1=-2, k=2, theta=1)
+plot(errors_gamma_model.data$x, errors_gamma_model.data$y, col=addTrans('orange', 30))
+# true regression line
+abline(a=5, b=-2, col='red', lwd=3)
+
+# fitted regresion line
+errors_gamma_model.sample = errors_gamma_df(n=10, beta0=5, beta1=-2, k=2, theta=1)
+points(errors_gamma_model.sample$x, errors_gamma_model.sample$y, col=addTrans('blue', 200))
+errors_gamma_model.fit = lm(y ~ x, data=errors_gamma_model.sample)
+abline(errors_gamma_model.fit, col=addTrans('blue', 200))
+```
+
+## Other distributions for errors
+```{r}
+## normal:
+e <- rnorm(n=100, mean=0, sd=1)
+```
+

@@ -1,0 +1,54 @@
+---
+title: "Plug-in Estimation"
+author: "Su Goh"
+date: "09/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Plug-in principle
+We have some model \(Y = \beta_0 + \beta_1 X\), where the optimal regression line is given by \(m^*(X) = \beta^*_0 + \beta^*_1 X\). Furthermore, we have the following results:
+
+\(\beta^*_1 = Cov(X,Y) / Var(X) \) \\
+\(\beta^*_0 = \mathbb{E}(Y) - \beta^*_1 \mathbb{E}(X)\)
+
+The plug-in principle tells us that we can use sample estimates to estimate \(\beta^*_0\) and \(\beta^*_1\), with  \(\hat{\beta}_0\) and \(\hat{\beta}_1\) respectively: 
+
+\(\hat{\beta}_1\ = \frac{\sum^n_{i=1}(y_i - \bar{y})((x_i - \bar{x}))}{\sum^n_{i=1}(x_i - \bar{x})^2}\)  \\
+\(\beta^*_0 = \bar{y}- \hat{\beta}_1 \bar{x}\)
+
+So when we're working with data, we can directly compute the plug-in estimates.
+
+## Code example
+I'm going to replicate the tutorial code with another example: predicting the stopping distance of a car with their speed:
+```{r data}
+
+library(datasets)
+x = cars$speed
+y = cars$dist
+
+plot(x, y, pch=19, xlab='Speed', ylab='Distance')
+xmean = mean(x)
+ymean = mean(y)
+abline(v=xmean, h=ymean, lty=2)
+```
+
+In R, we use lm to compute the plug-in estimates!
+
+```{r lm}
+
+fit = lm(y ~ x)
+summary(fit)
+```
+
+Specifically, we are interested in the coefficient estimates where the estimate for the coefficient of (Intercept) corresponds to \(\hat{\beta}_0\) and of x to \(\hat{\beta}_1\). For this example, we have found that \(\hat{\beta}_0 = -17.58\) and \(\hat{\beta}_1 = 3.93\). 
+
+```{r final plot}
+plot(x, y, pch=19, xlab='Speed', ylab='Distance')
+abline(v=xmean, h=ymean, lty=2)
+abline(coef(fit), col='red')
+```
+
