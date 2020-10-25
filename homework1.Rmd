@@ -39,6 +39,8 @@ addTrans <- function(color,trans) {
 First, I set up dataframe for the 100 sampled observations of X and Y. Xi's follow a uniform distribution ranging from -1 to 1, and the errors follow a standard normal distribution. 
 
 ```{r 6a}
+set.seed(1)
+
 linmod.norm <- function(n, beta.0, beta.1) {
   x <- runif(n, min=-1, max=1)  # X ~ U(-1, 1)
   epsilon <- rnorm(n, 0, 1)  # e ~ N(0, 1)
@@ -48,13 +50,16 @@ linmod.norm <- function(n, beta.0, beta.1) {
 
 df = linmod.norm(n=100, beta.0=5, beta.1=3)
 plot(x=df$x,y=df$y, xlab='X', ylab='Y')
-abline(a=5, b=3, lwd = 3, col = addTrans("red",200))
+fit = lm(df$y ~ df$x)
+abline(fit,col='red')
 ```
 
 
 ### b) Repeated sampling
 I repeat the experiment in a 1000 times to obtain the estimate \(\hat{\beta_1}\).
 ```{r 6b}
+set.seed(1)
+
 beta1.est = vector(length=1000)
 for(i in 1:1000){
   df = linmod.norm(n=100, beta.0=5, beta.1=3)
@@ -69,36 +74,26 @@ if (beta1.mean < 3){
   comp = 'greater than'
 } 
 sprintf('The mean of these values is %f, %s beta1 = 3.', beta1.mean, comp)
-hist(beta1.est, xlab='Estimated beta1')
+hist(beta1.est, breaks=50, xlab='Estimated beta1')
 ```
 
 
 ### c) Errors follow Cauchy distribution
 ```{r 6c}
+set.seed(1)
 
-linmod.cauchy <- function(n, beta.0, beta.1) {
-  x <- runif(n, min=-1, max=1)  # X ~ U(-1, 1)
-  epsilon <- rcauchy(n)  # e ~ cauchy
-  y <- beta.0 + beta.1*x + epsilon  # model specification
-  return(data.frame(x=x, y=y))
+n <- 100
+betas <- rep(0, 1000)
+for(i in 1:1000) {
+X <- runif(n, -1, 1)
+epsilon <- rcauchy(n, 0, 1)
+Y <- 5 + 3*X + epsilon
+fit = lm(Y ~ X)
+betas[i] <- fit$coef[2]
 }
+mean(betas)
 
-beta1.cauchy = vector(length=1000)
-for(i in 1:1000){
-  df.cauchy = linmod.cauchy(n=100, beta.0=5, beta.1=3)
-  beta1.cauchy[i] = coefficients(lm(y ~ x, data = df.cauchy))[2]
-}
-
-beta1.mean = mean(beta1.cauchy)
-comp = 'equal to'
-if (beta1.mean < 3){
-  comp = 'less than'
-} else if (beta1.mean > 3){
-  comp = 'greater than'
-} 
-sprintf('The mean of these values is %f, %s beta1 = 3.', beta1.mean, comp)
-
-hist(beta1.cauchy)
+hist(beta1.cauchy, breaks=500, xlim = c(-50,50))
 ```
 
 The range of the histogram has increased significantly. It is no longer centered around 3 closely. The Cauchy distribution has fatter tails than the normal distribution, hence the \(\hat{\beta_1}\) ends up taking on varied and spread out values. 
@@ -106,9 +101,10 @@ The range of the histogram has increased significantly. It is no longer centered
 
 ### d) Xs with errors
 ```{r 6d}
+set.seed(12345)
 linmod.norm.error <- function(n, beta.0, beta.1) {
   x <- runif(n, min=-1, max=1)  # X ~ U(-1, 1)
-  delta <- rnorm(n, 0, 2)
+  delta <- rnorm(n, 0, sqrt(2))  # note that in rnorm it takes sd and not var!
   epsilon <- rnorm(n, 0, 1)  # e ~ N(0, 1)
   y <- beta.0 + beta.1*x + epsilon  # model specification
   return(data.frame(x=x, w=x+delta, y=y))
@@ -140,7 +136,7 @@ sprintf('The mean of these values is %f, %s beta1 = 3.', beta1.mean, comp)
 hist(beta1.errors)
 ```
 
-The mean for the \(\hat{\beta_1}\) in the model where X is observed with errors (i.e. W) is significantly lower than in the model in part a. The smaller coefficient leads us to believe that the variable X has far less of an effect on Y than it truly does.
+The mean for the \(\hat{\beta_1}\) in the model where X is observed with errors (i.e. W) is significantly lower than in the model in part a, so it is biased. The smaller coefficient leads us to believe that the variable X has far less of an effect on Y than it truly does.
 
 ## Question 7
 ```{r 7 load data}
@@ -157,12 +153,12 @@ plot(x_kidney, y_kidney, xlab='Age', ylab='Total kidney function')
 abline(lm(y_kidney ~ x_kidney))
 ```
 
-The relationship between \(age\) and \(tot\) is not linear. Plotting the linear relationship based on the LS model doesn't offer a very good fit, as we can see there are significant number of datapoints that are quite distant from the line. 
+There is a negative linear relationship between \(age\) and \(tot\).
 
 
 ### b) Test set
 ```{r 7b test}
-age_grid = data.frame(x_test = seq(min(x_kidney), max(x_kidney), by=0.2))
+age_grid = data.frame(x_test = seq(min(kidney$age), max(x_kidney), by=0.01))
 ```
 
 ### c) KNN prediction
@@ -175,8 +171,6 @@ pred_k10 = knn.reg(train=x_kidney, test=age_grid, y=y_kidney, k=10)
 pred_k25 = knn.reg(train=x_kidney, test=age_grid, y=y_kidney, k=25)
 pred_k50 = knn.reg(train=x_kidney, test=age_grid, y=y_kidney, k=50)
 pred_k157 = knn.reg(train=x_kidney, test=age_grid, y=y_kidney, k=157)
-
-par(mfrow = c(3,2))
 
 plot(y_kidney ~ x_kidney,  xlab='Age', ylab='Total kidney function', main="k=1")
 lines(x = age_grid$x_test, y = pred_k1$pred, col='orange')
@@ -197,18 +191,7 @@ plot(y_kidney ~ x_kidney,  xlab='Age', ylab='Total kidney function', main="k=157
 lines(x = age_grid$x_test, y = pred_k157$pred, col='orange')
 ```
 
-Which k value is the best? I choose the one which results in the smallest root MSE.
-
-```{r 7c mse}
-sqrt(mean((y_kidney - pred_k1$pred)^2))
-sqrt(mean((y_kidney - pred_k5$pred)^2))
-sqrt(mean((y_kidney - pred_k10$pred)^2))
-sqrt(mean((y_kidney - pred_k25$pred)^2))
-sqrt(mean((y_kidney - pred_k50$pred)^2))
-sqrt(mean((y_kidney - pred_k157$pred)^2))
-```
-
-I think there's something wrong with my code implementation but I am stuck on it so just going to submit what I have an explain my reasoning. :( According to the computed RMSE, when \(k=157\), the RMSE is the smallest. However, looking at the plots tells us that the model is very overfitted, the line is almost horizontal but the data points clearly are not linear. If I had to choose, I would say k=25 has the best fit as it is rather smooth but still has the general shape that matches the distribution of the data points. 
+ k=25 has the best fit as it is rather smooth but still has the general shape that matches the distribution of the data points. 
 
 
 ### d) Test set [0, 18]
@@ -243,7 +226,7 @@ plot(y_kidney ~ x_kidney,  xlab='Age', ylab='Total kidney function', main="k=157
 lines(x = underage_grid$x_test, y = pred_k157$pred, col='blue')
 ```
 
-The predictions tend towards 0 as k increases and the predicted relationship appears to be completely linear. This is because the range of the test set is outside of the given data range, so there is no basis for prediction.
+The predictions tend towards 0 as k increases and the line of prediction is on the left on the training set. This is because the range of the test set is outside of the given data range, so there is no basis for prediction.
 
 
 ### e) Test set [88, 120]
@@ -278,4 +261,4 @@ plot(y_kidney ~ x_kidney,  xlab='Age', ylab='Total kidney function', main="k=157
 lines(x = overage_grid$x_test, y = pred_k157$pred, col='green')
 ```
 
-This faces the same problem as 7d, where the test data is outside of the range of the given data. Like 7d, the horizontal line tends to 0 as k increases and the predicted relationship is linear. 
+This faces the same problem as 7d, where the test data is outside of the range of the given data. Like 7d, the horizontal line is to the right of the training set and tends to 0 as k increases and the predicted relationship is linear. 
