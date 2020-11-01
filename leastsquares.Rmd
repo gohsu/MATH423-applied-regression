@@ -2,7 +2,9 @@
 title: "Least Squares"
 author: "Su Goh"
 date: "25/10/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -25,7 +27,11 @@ We can call the coefficients with `coefficients(model)`, residuals with `residua
 Note that *residual standard error = 96.11 on 18 degrees of freedom* refers to \(\hat{\sigma} = \sqrt{\hat{\sigma}^2}\), where: 
   \(\hat{\sigma}^2 = \frac{\text{sum of squared residuals}}{n-2} = \frac{\sum^n_{i=1} (y_i - \hat{y}_i)^2}{n-2}\)
   
-For the coefficients, std. error refers to \(\hat{se(\hat{\beta})}\), the estimated standard errors of the estimator. The t-value column contains the test statistics \(\frac{\hat{\beta}}{ese(\hat{\beta})}\) testing if the coefficient is significantly different from 0 (i.e. \(\textbf{H}_0 : \beta = 0 \)), and Pr(>|t|) contains the p-value for each test. For this case, both p-values are significant at \(\alpha = 0\), so we can reject both null hypotheses. 
+For the coefficients, std. error refers to \(ese(\hat{\beta})\), the estimated standard errors of the estimator. 
+\[ese(\hat{\beta_0}) = \sqrt{MS_{Res}(\frac{1}{n}+\frac{\bar{x}_1^2}{S_{xx}})}\]
+\[ese(\hat{\beta_1}) = \sqrt{\frac{MS_{Res}}{S_{xx}}}\]
+
+The t-value column contains the test statistics \(\frac{\hat{\beta}}{ese(\hat{\beta})}\) testing if the coefficient is significantly different from 0 (i.e. \(\textbf{H}_0 : \beta = 0 \)), and Pr(>|t|) contains the p-value for each test. The asterisks indicate the strength of rejection. For this case, both p-values are significant at \(\alpha = 0\), so we can reject both null hypotheses. 
 
 
 The following gives us predictions for the strength of the rocket, at ages 5 to 10. Note that newdata needs to have the correct column name. If newdata is empty, or if it's malformed, then `predict()` and `fitted()` will give the same result.
