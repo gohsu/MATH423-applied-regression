@@ -1,5 +1,5 @@
 ---
-title: "Homework 3"
+title: "Homework 3 Coding Questions"
 author: "Su Goh"
 date: "25/11/2020"
 output: pdf_document
@@ -10,16 +10,37 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Question 2
+### a) Plots
 ```{r}
 data(stackloss)
 plot(stackloss)
+```
+
+### b) Multiple regression 
+```{r}
 mlr_stackloss <- lm (stack.loss ~ Air.Flow + Water.Temp + Acid.Conc. , data = stackloss)
 summary(mlr_stackloss)
-confint(mlr_stackloss, level = 0.9)
-predict(mlr_stackloss, newdata = data.frame(Air.Flow=58, Water.Temp=20, Acid.Conc.=86), interval = "prediction", level = 0.95)
-mlr_stackloss_no3 <- lm (stack.loss ~ Air.Flow + Water.Temp , data = stackloss)
-anova(mlr_stackloss_no3, mlr_stackloss)
 ```
+
+For the multiple regression model \(\text{stackloss} = \beta_0 + \beta_1 \text{airflow} + \beta_2 \text{water temp} + \beta_3 \text{acid} + \epsilon\), the coefficients that are statistically significant at the 1% level are the intercept, air flow and water temperature. This means that they are statistically significant predictors for stackloss. A 1 unit increase in air flow contributes to a 0.7156 unit increase in stackloss, controlling for all other variables. A 1 unit increase in water temperature leads to a 1.2953 increase in stackloss.
+
+### c) 90% CI
+```{r}
+confint(mlr_stackloss, level = 0.9)
+```
+
+The 90% CI for each of the coefficients can be seen in the code output above.
+
+### d) 99% PI
+```{r}
+predict(mlr_stackloss, newdata = data.frame(Air.Flow=58, Water.Temp=20, Acid.Conc.=86), interval = "prediction", level = 0.95)
+```
+
+For the given values, the prediction for stackloss is 14.41064, and the CI is $[7.385, 21.436]$.
+
+### e) Hypothesis test of model
+$$H_0: \beta_3 = 0 \\ H_1: \beta_3 \neq 0$$ is the t-test, and we can read the result from the regression summary as printed in part b. The p-value is 0.344. Hence at the 10% level of significance, we fail to reject the null hypothesis that $\beta_3$ is not a statistically significant predictor for stackloss. 
+
 
 ## Question 3
 ### a) Data Plot
@@ -34,6 +55,7 @@ coplot(weight ~ Time | Diet, data = ChickWeight, columns=4, show.given = FALSE)
 ```{r}
 chick6_data <- ChickWeight[which(ChickWeight$Chick==6), ]
 chick6 <- lm(weight ~ Time, data=chick6_data)
+summary(chick6)
 plot(weight~Time, data=chick6_data, main='Chick 6 (weight ~ Time)')
 abline(chick6)
 chick6_poly2 <- lm(weight ~ poly(Time,2, raw=TRUE), data=chick6_data)
@@ -47,10 +69,9 @@ legend(0, 160, legend=c("Linear", "deg=2", "deg=3", "deg=4"),
 plot(residuals(chick6) ~ chick6_data$Time, main='Residuals for linear regression')
 plot(residuals(chick6_poly4) ~ chick6_data$Time, main='Residuals for polynomial regression (deg=4)')
 summary(chick6_poly4)
-
 ```
 
-aksdfsd
+For the linear model $chickweight = time + \epsilon$, the plots of the data and the residual show that the linear model is not a very good fit. We try fitting a polynomial model with varying degrees to find that the best fit line for the model with degree 4 is closest to the datapoints and fits the shape of the spread of data. The residual plot also shows that there is no correlation, which makes it a better fit. The summary of the regression model ouput for polynomial regression with degree 4 shows that the parameter Time, which was statistically significant under the linear model, is not under the more appropriate polynomial model. 
 
 
 ### c) ChickWeight (weight ~ Time)
@@ -58,20 +79,22 @@ aksdfsd
 plot(weight~Time, data=ChickWeight, main='ChickWeight (weight ~ Time)')
 chick_model <- lm(weight ~ Time, data=ChickWeight)
 abline(chick_model)
+summary(chick_model)
 chick_poly <- lm(weight ~ poly(Time, 2), data=ChickWeight)
 poly_data <- data.frame(x=ChickWeight$Time, y=predict(chick_poly, data=ChickWeight$Time))
 poly_data <- poly_data[order(poly_data$x),]
 lines(poly_data$x, poly_data$y, col='red')
+legend(0, 370, legend=c("Linear", "deg=2"),col=c("black", "red"), lty=1)
 plot(residuals(chick_model) ~ ChickWeight$Time, main='Residuals for linear regression')
-abline(lm(residuals(chick_model) ~ ChickWeight$Time), col='green')
 plot(residuals(chick_poly) ~ ChickWeight$Time, main='Residuals for polynomial regression (deg=2)')
-abline(lm(residuals(chick_poly) ~ ChickWeight$Time), col='green')
+summary(chick_poly)
 ```
 
+At first glance the linear model shows a positive relationship between weight and time and generally fits the data. According to the summary of the regression, time is a statistically significant predictor for weight. A 1 unit increase in Time leads to a 8.803 increase in weight. However, as we can see from the residuals, there is still a bit of curvature, suggesting that we could use a polynomial model. The modelling for the individual chick suggested that a polynomial model might be better suited for identifying this relationship. As such, I fit a quadratic model to the data, and we can see that it fits better. The model shows us that time does have a statistically significant effect on weight. We can also see that the residuals are more even.  
 
 ### d) ChickWeight (weight ~ Time), controlling for Diet
 ```{r}
-plot(weight~Time, data=ChickWeight, main='ChickWeight (weight ~ Time)')
+plot(weight~Time, data=ChickWeight, main='ChickWeight (Linear model)')
 colors <- c('blue', 'purple','orchid', 'red')
 diet_1 <- ChickWeight[which(ChickWeight$Diet==1),]
 diet_2 <- ChickWeight[which(ChickWeight$Diet==2),]
@@ -87,15 +110,43 @@ abline(model_3, col=colors[3], lw=2)
 abline(model_4, col=colors[4], lw=2)
 legend(0, 380, legend=c("Diet 1", "Diet 2", "Diet 3", "Diet 4"),
        col=colors, lw=2)
-boxplot(residuals(model_1), residuals(model_2), residuals(model_3), residuals(model_4), xlab="Diet", ylab='Residuals')
+plot(weight~Time, data=ChickWeight, main='ChickWeight (Quadratic model)')
+poly_1 <- lm(weight ~ poly(Time, 2), data=diet_1)
+poly_2 <- lm(weight ~ poly(Time, 2), data=diet_2)
+poly_3 <- lm(weight ~ poly(Time, 2), data=diet_3)
+poly_4 <- lm(weight ~ poly(Time, 2), data=diet_4)
+lines(sort(diet_1$Time), fitted(poly_1)[order(diet_1$Time)], col=colors[1], lw=2)
+lines(sort(diet_2$Time), fitted(poly_2)[order(diet_2$Time)], col=colors[2], lw=2)
+lines(sort(diet_3$Time), fitted(poly_3)[order(diet_3$Time)], col=colors[3], lw=2)
+lines(sort(diet_4$Time), fitted(poly_4)[order(diet_4$Time)], col=colors[4], lw=2)
+legend(0, 380, legend=c("Diet 1", "Diet 2", "Diet 3", "Diet 4"),
+       col=colors, lw=2)
+boxplot(residuals(model_1), residuals(model_2), residuals(model_3), residuals(model_4),xlab="Diet", ylab='Residuals', main='Residuals (Linear)')
+boxplot(residuals(poly_1), residuals(poly_2), residuals(poly_3), residuals(poly_4), xlab="Diet", ylab='Residuals', main='Residuals (Quadratic)')
 par(mfrow=c(2,2))
-plot(residuals(model_1) ~ diet_1$Time, main='Residuals for regression in Diet 1')
-abline(lm(residuals(model_1) ~ diet_1$Time), col='green')
-plot(residuals(model_2) ~ diet_2$Time, main='Residuals for regression in Diet 2')
-abline(lm(residuals(model_2) ~ diet_2$Time), col='green')
-plot(residuals(model_3) ~ diet_3$Time, main='Residuals for regression in Diet 3')
-abline(lm(residuals(model_3) ~ diet_3$Time), col='green')
-plot(residuals(model_4) ~ diet_4$Time, main='Residuals for regression in Diet 4')
-abline(lm(residuals(model_4) ~ diet_4$Time), col='green')
+plot(residuals(model_1) ~ diet_1$Time, main='Residuals for lin reg in Diet 1')
+plot(residuals(model_2) ~ diet_2$Time, main='Residuals for lin reg in Diet 2')
+plot(residuals(model_3) ~ diet_3$Time, main='Residuals for lin reg in Diet 3')
+plot(residuals(model_4) ~ diet_4$Time, main='Residuals for lin reg in Diet 4')
+plot(residuals(poly_1) ~ diet_1$Time, main='Residuals for quad reg in Diet 1')
+plot(residuals(poly_2) ~ diet_2$Time, main='Residuals for quad reg in Diet 2')
+plot(residuals(poly_3) ~ diet_3$Time, main='Residuals for quad reg in Diet 3')
+plot(residuals(poly_4) ~ diet_4$Time, main='Residuals for quad reg in Diet 4')
 ```
 
+We create separate models for each of the diets. However, the models suggest that the intercept for each is different. This cannot be the case as the chicks should all have approximately the same weight at birth. Specifically the model for Diet 3 shows that weight at birth is 0, which does not make sense. Even so, the linear model plot shows a positive relationship between weight and time, with Diet 3 having the largest effect and Diet 1 having the smallest. The box plot of residuals by diet show a large variance, and plotting them against time reveals a slight downward curve as seen previously. Hence, I use quadratic models on the data and find that there is a better fit. They reveal a similar relationship as shown in the linear model, but the residuals have smaller variance (as seen on the boxplot) and are more even when plotted against time. 
+
+## Question 4
+```{r}
+cigs <- read.csv('cigs.csv')
+model_4_1_null <- lm(cigs$CO ~ cigs$TAR + cigs$NICOTINE)
+model_4_1 <- lm(cigs$CO ~ cigs$TAR + cigs$NICOTINE + cigs$WEIGHT)
+anova(model_4_1_null, model_4_1) 
+
+model_4_2_null <- lm(cigs$CO ~ cigs$TAR)
+model_4_2 <- lm(cigs$CO ~ cigs$TAR + cigs$NICOTINE)
+anova(model_4_2_null, model_4_2)
+```
+
+a) The F-statistic is 0.0011.
+b) The F-statistic is 0.4882.
